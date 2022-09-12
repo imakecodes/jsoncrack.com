@@ -3,5 +3,6 @@ services:
   app:
     container_name: jsoncrack
     build: .
+    restart: always
     ports:
       - "7690:8080"

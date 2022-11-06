@@ -1,9 +1,9 @@
-import toast from "react-hot-toast";
+import { parse } from "jsonc-parser";
 
 const calculateSize = (
   text: string | [string, string][],
   isParent = false,
-  isExpanded: boolean
+  isFolded: boolean
 ) => {
   let value = "";
 
@@ -11,12 +11,13 @@ const calculateSize = (
   else value = text.map(([k, v]) => `${k}: ${v}`).join("\n");
 
   const lineCount = value.split("\n");
-  const lineLengths = lineCount.map((line) => line.length);
+  const lineLengths = lineCount.map(line => line.length);
   const longestLine = lineLengths.sort((a, b) => b - a)[0];
 
   const getWidth = () => {
-    if (isExpanded) return 35 + longestLine * 8 + (isParent ? 60 : 0);
-    if (isParent) return 150;
+    if (Array.isArray(text) && !text.length) return 40;
+    if (!isFolded) return 35 + longestLine * 8 + (isParent ? 60 : 0);
+    if (isParent) return 170;
     return 200;
   };
 
@@ -44,18 +45,14 @@ const filterValues = ([k, v]) => {
   return true;
 };
 
-function generateChildren(
-  object: Object,
-  isExpanded = true,
-  nextId: () => string
-) {
+function generateChildren(object: Object, isFolded = false, nextId: () => string) {
   if (!(object instanceof Object)) object = [object];
 
   return Object.entries(object)
     .filter(filterChild)
     .flatMap(([key, v]) => {
-      const { width, height } = calculateSize(key, true, isExpanded);
-      const children = extract(v, isExpanded, nextId);
+      const { width, height } = calculateSize(key, true, isFolded);
+      const children = extract(v, isFolded, nextId);
 
       return [
         {
@@ -66,7 +63,7 @@ function generateChildren(
           height,
           data: {
             isParent: true,
-            hasChild: !!children.length,
+            childrenCount: children.length,
           },
         },
       ];
@@ -84,27 +81,28 @@ function generateNodeData(object: Object) {
 
 const extract = (
   os: string[] | object[] | null,
-  isExpanded = true,
+  isFolded = false,
   nextId = (
-    (id) => () =>
+    id => () =>
       String(++id)
   )(0)
 ) => {
   if (!os) return [];
 
-  return [os].flat().map((o) => {
+  return [os].flat().map(o => {
     const text = generateNodeData(o);
-    const { width, height } = calculateSize(text, false, isExpanded);
+    const { width, height } = calculateSize(text, false, isFolded);
 
     return {
       id: nextId(),
       text,
       width,
       height,
-      children: generateChildren(o, isExpanded, nextId),
+      children: generateChildren(o, isFolded, nextId),
       data: {
         isParent: false,
-        hasChild: false,
+        childrenCount: 0,
+        isEmpty: !text.length,
       },
     };
   });
@@ -124,17 +122,17 @@ const relationships = (xs: { id: string; children: never[] }[]) => {
   ]);
 };
 
-export const parser = (jsonStr: string, isExpanded = true) => {
+export const parser = (jsonStr: string, isFolded = false) => {
   try {
-    let json = JSON.parse(jsonStr);
+    let json = parse(jsonStr);
     if (!Array.isArray(json)) json = [json];
     const nodes: NodeData[] = [];
     const edges: EdgeData[] = [];
 
-    const mappedElements = extract(json, isExpanded);
+    const mappedElements = extract(json, isFolded);
     const res = [...flatten(mappedElements), ...relationships(mappedElements)];
 
-    res.forEach((data) => {
+    res.forEach(data => {
       if (isNode(data)) {
         nodes.push(data);
       } else {
@@ -145,7 +143,6 @@ export const parser = (jsonStr: string, isExpanded = true) => {
     return { nodes, edges };
   } catch (error) {
     console.error(error);
-    toast.error("An error occured while parsing JSON data!");
     return {
       nodes: [],
       edges: [],

@@ -9,12 +9,12 @@ const withPWA = require("next-pwa")({
  * @type {import('next').NextConfig}
  */
 const nextConfig = {
-  swcMinify: true,
   reactStrictMode: true,
   exportPathMap: async () => ({
     "/": { page: "/" },
     "/editor": { page: "/Editor" },
     "/widget": { page: "/Widget" },
+    "/embed": { page: "/Embed" },
   }),
 };
 

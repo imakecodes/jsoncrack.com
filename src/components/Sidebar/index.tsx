@@ -1,9 +1,6 @@
 import React from "react";
-import toast from "react-hot-toast";
 import Link from "next/link";
-import styled from "styled-components";
-import { TiFlowMerge } from "react-icons/ti";
-import { CgArrowsMergeAltH, CgArrowsShrinkH } from "react-icons/cg";
+import toast from "react-hot-toast";
 import {
   AiOutlineDelete,
   AiFillGithub,
@@ -13,19 +10,22 @@ import {
   AiOutlineLink,
   AiOutlineEdit,
 } from "react-icons/ai";
+import { CgArrowsMergeAltH, CgArrowsShrinkH } from "react-icons/cg";
 import { FiDownload } from "react-icons/fi";
-
-import { Tooltip } from "src/components/Tooltip";
-import { useRouter } from "next/router";
-import { ImportModal } from "src/containers/Modals/ImportModal";
-import { ClearModal } from "src/containers/Modals/ClearModal";
-import { ShareModal } from "src/containers/Modals/ShareModal";
-import useConfig from "src/hooks/store/useConfig";
 import { HiHeart } from "react-icons/hi";
-import shallow from "zustand/shallow";
 import { MdCenterFocusWeak } from "react-icons/md";
-import { getNextLayout } from "src/utils/getNextLayout";
+import { TiFlowMerge } from "react-icons/ti";
+import { VscCollapseAll, VscExpandAll } from "react-icons/vsc";
+import { Tooltip } from "src/components/Tooltip";
+import { ClearModal } from "src/containers/Modals/ClearModal";
 import { DownloadModal } from "src/containers/Modals/DownloadModal";
+import { ImportModal } from "src/containers/Modals/ImportModal";
+import { ShareModal } from "src/containers/Modals/ShareModal";
+import useConfig from "src/store/useConfig";
+import useGraph from "src/store/useGraph";
+import { getNextDirection } from "src/utils/getNextDirection";
+import styled from "styled-components";
+import shallow from "zustand/shallow";
 
 const StyledSidebar = styled.div`
   display: flex;
@@ -133,25 +133,33 @@ const StyledLogo = styled.a`
   }
 `;
 
-function rotateLayout(layout: "LEFT" | "RIGHT" | "DOWN" | "UP") {
-  if (layout === "LEFT") return 90;
-  if (layout === "UP") return 180;
-  if (layout === "RIGHT") return 270;
+function rotateLayout(direction: "LEFT" | "RIGHT" | "DOWN" | "UP") {
+  if (direction === "LEFT") return 90;
+  if (direction === "UP") return 180;
+  if (direction === "RIGHT") return 270;
   return 360;
 }
 
 export const Sidebar: React.FC = () => {
-  const getJson = useConfig((state) => state.getJson);
-  const setConfig = useConfig((state) => state.setConfig);
-  const centerView = useConfig((state) => state.centerView);
   const [uploadVisible, setUploadVisible] = React.useState(false);
   const [clearVisible, setClearVisible] = React.useState(false);
   const [shareVisible, setShareVisible] = React.useState(false);
   const [isDownloadVisible, setDownloadVisible] = React.useState(false);
-  const { push } = useRouter();
 
-  const [expand, layout, hideEditor] = useConfig(
-    (state) => [state.expand, state.layout, state.hideEditor],
+  const getJson = useConfig(state => state.getJson);
+  const setDirection = useGraph(state => state.setDirection);
+  const setConfig = useConfig(state => state.setConfig);
+  const centerView = useConfig(state => state.centerView);
+  const collapseGraph = useGraph(state => state.collapseGraph);
+  const expandGraph = useGraph(state => state.expandGraph);
+
+  const [graphCollapsed, direction] = useGraph(state => [
+    state.graphCollapsed,
+    state.direction,
+  ]);
+
+  const [foldNodes, hideEditor] = useConfig(
+    state => [state.foldNodes, state.hideEditor],
     shallow
   );
 
@@ -164,14 +172,21 @@ export const Sidebar: React.FC = () => {
     a.click();
   };
 
-  const toggleExpandCollapse = () => {
-    setConfig("expand", !expand);
-    toast(`${expand ? "Collapsed" : "Expanded"} nodes.`);
+  const toggleFoldNodes = () => {
+    setConfig("foldNodes", !foldNodes);
+    toast(`${foldNodes ? "Unfolded" : "Folded"} nodes`);
   };
 
-  const toggleLayout = () => {
-    const nextLayout = getNextLayout(layout);
-    setConfig("layout", nextLayout);
+  const toggleDirection = () => {
+    const nextDirection = getNextDirection(direction);
+    setDirection(nextDirection);
+  };
+
+  const toggleExpandCollapseGraph = () => {
+    if (graphCollapsed) expandGraph();
+    else collapseGraph();
+
+    toast(`${graphCollapsed ? "Expanded" : "Collapsed"} graph.`);
   };
 
   return (
@@ -194,8 +209,8 @@ export const Sidebar: React.FC = () => {
           </StyledElement>
         </Tooltip>
         <Tooltip title="Rotate Layout">
-          <StyledElement onClick={toggleLayout}>
-            <StyledFlowIcon rotate={rotateLayout(layout)} />
+          <StyledElement onClick={toggleDirection}>
+            <StyledFlowIcon rotate={rotateLayout(direction)} />
           </StyledElement>
         </Tooltip>
         <Tooltip className="mobile" title="Center View">
@@ -205,13 +220,18 @@ export const Sidebar: React.FC = () => {
         </Tooltip>
         <Tooltip
           className="desktop"
-          title={expand ? "Shrink Nodes" : "Expand Nodes"}
+          title={foldNodes ? "Unfold Nodes" : "Fold Nodes"}
         >
-          <StyledElement
-            title="Toggle Expand/Collapse"
-            onClick={toggleExpandCollapse}
-          >
-            {expand ? <CgArrowsMergeAltH /> : <CgArrowsShrinkH />}
+          <StyledElement onClick={toggleFoldNodes}>
+            {foldNodes ? <CgArrowsShrinkH /> : <CgArrowsMergeAltH />}
+          </StyledElement>
+        </Tooltip>
+        <Tooltip
+          className="desktop"
+          title={graphCollapsed ? "Expand Graph" : "Collapse Graph"}
+        >
+          <StyledElement onClick={toggleExpandCollapseGraph}>
+            {graphCollapsed ? <VscExpandAll /> : <VscCollapseAll />}
           </StyledElement>
         </Tooltip>
         <Tooltip className="desktop" title="Save JSON">
@@ -237,7 +257,7 @@ export const Sidebar: React.FC = () => {
       </StyledTopWrapper>
       <StyledBottomWrapper>
         <StyledElement>
-          <Link href="https://twitter.com/aykutsarach">
+          <Link href="https://twitter.com/jsoncrack">
             <a aria-label="Twitter" rel="me" target="_blank">
               <AiOutlineTwitter />
             </a>
@@ -261,10 +281,7 @@ export const Sidebar: React.FC = () => {
       <ImportModal visible={uploadVisible} setVisible={setUploadVisible} />
       <ClearModal visible={clearVisible} setVisible={setClearVisible} />
       <ShareModal visible={shareVisible} setVisible={setShareVisible} />
-      <DownloadModal
-        visible={isDownloadVisible}
-        setVisible={setDownloadVisible}
-      />
+      <DownloadModal visible={isDownloadVisible} setVisible={setDownloadVisible} />
     </StyledSidebar>
   );
 };

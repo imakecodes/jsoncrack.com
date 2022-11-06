@@ -1,28 +1,27 @@
 import React from "react";
-
 import {
   searchQuery,
   cleanupHighlight,
   highlightMatchedNodes,
 } from "src/utils/search";
-import useConfig from "./store/useConfig";
+import useConfig from "../store/useConfig";
 
 export const useFocusNode = () => {
-  const setConfig = useConfig((state) => state.setConfig);
-  const zoomPanPinch = useConfig((state) => state.zoomPanPinch);
+  const setConfig = useConfig(state => state.setConfig);
+  const zoomPanPinch = useConfig(state => state.zoomPanPinch);
   const [selectedNode, setSelectedNode] = React.useState(0);
   const [content, setContent] = React.useState({
     value: "",
     debounced: "",
   });
 
-  const skip = () => setSelectedNode((current) => current + 1);
+  const skip = () => setSelectedNode(current => current + 1);
 
   React.useEffect(() => {
     setConfig("performanceMode", !content.value.length);
 
     const debouncer = setTimeout(() => {
-      setContent((val) => ({ ...val, debounced: content.value }));
+      setContent(val => ({ ...val, debounced: content.value }));
     }, 800);
 
     return () => clearTimeout(debouncer);

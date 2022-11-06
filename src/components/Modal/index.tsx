@@ -1,12 +1,13 @@
 import React from "react";
-import { ReactComponent } from "src/typings/global";
 import { Button } from "src/components/Button";
-import * as Styled from "./styles";
 import useKeyPress from "src/hooks/useKeyPress";
+import * as Styled from "./styles";
 
 type ControlProps = React.PropsWithChildren<{
   setVisible: (status: boolean) => void;
 }>;
+
+export type ReactComponent = React.FC<React.PropsWithChildren<{}>>;
 
 type ModalTypes = {
   Header: ReactComponent;
@@ -53,7 +54,7 @@ const Modal: React.FC<React.PropsWithChildren<ModalProps>> & ModalTypes = ({
 }) => {
   const onClick = (e: React.SyntheticEvent<HTMLDivElement>) => {
     if (e.currentTarget === e.target) {
-      setVisible((v) => !v);
+      setVisible(v => !v);
     }
   };
 

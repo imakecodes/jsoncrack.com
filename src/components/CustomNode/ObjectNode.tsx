@@ -1,23 +1,18 @@
 import React from "react";
+// import { useInViewport } from "react-in-viewport";
 import { CustomNodeProps } from "src/components/CustomNode";
-import useConfig from "src/hooks/store/useConfig";
-import { useInViewport } from "react-in-viewport";
+import useConfig from "src/store/useConfig";
 import * as Styled from "./styles";
 
 const inViewport = true;
 
-type ObjectNodeProps = CustomNodeProps<[string, string][]>;
-
-const ObjectNode: React.FC<ObjectNodeProps> = ({
-  width,
-  height,
-  value,
-  x,
-  y,
-}) => {
+const ObjectNode: React.FC<CustomNodeProps> = ({ node, x, y }) => {
+  const { text, width, height, data } = node;
   const ref = React.useRef(null);
+  const performanceMode = useConfig(state => state.performanceMode);
   // const { inViewport } = useInViewport(ref);
-  const performanceMode = useConfig((state) => state.performanceMode);
+
+  if (data.isEmpty) return null;
 
   return (
     <Styled.StyledForeignObject
@@ -29,7 +24,7 @@ const ObjectNode: React.FC<ObjectNodeProps> = ({
       isObject
     >
       {(!performanceMode || inViewport) &&
-        value.map((val, idx) => (
+        text.map((val, idx) => (
           <Styled.StyledRow
             data-key={JSON.stringify(val[1])}
             data-x={x}
@@ -39,17 +34,18 @@ const ObjectNode: React.FC<ObjectNodeProps> = ({
             <Styled.StyledKey objectKey>
               {JSON.stringify(val[0]).replaceAll('"', "")}:{" "}
             </Styled.StyledKey>
-            <Styled.StyledLinkItUrl>
-              {JSON.stringify(val[1])}
-            </Styled.StyledLinkItUrl>
+            <Styled.StyledLinkItUrl>{JSON.stringify(val[1])}</Styled.StyledLinkItUrl>
           </Styled.StyledRow>
         ))}
     </Styled.StyledForeignObject>
   );
 };
 
-function propsAreEqual(prev: ObjectNodeProps, next: ObjectNodeProps) {
-  return String(prev.value) === String(next.value);
+function propsAreEqual(prev: CustomNodeProps, next: CustomNodeProps) {
+  return (
+    String(prev.node.text) === String(next.node.text) &&
+    prev.node.width === next.node.width
+  );
 }
 
 export default React.memo(ObjectNode, propsAreEqual);

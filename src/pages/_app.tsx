@@ -1,17 +1,17 @@
 import React from "react";
 import type { AppProps } from "next/app";
-import { Toaster } from "react-hot-toast";
-import { ThemeProvider } from "styled-components";
+import { useRouter } from "next/router";
 import { init } from "@sentry/nextjs";
-
+import { decompress } from "compress-json";
+import { Toaster } from "react-hot-toast";
+import { GoogleAnalytics } from "src/components/GoogleAnalytics";
+import { SupportButton } from "src/components/SupportButton";
 import GlobalStyle from "src/constants/globalStyle";
 import { darkTheme, lightTheme } from "src/constants/theme";
-import { GoogleAnalytics } from "src/components/GoogleAnalytics";
-import useConfig from "src/hooks/store/useConfig";
-import { decompress } from "compress-json";
-import { useRouter } from "next/router";
+import useConfig from "src/store/useConfig";
+import useStored from "src/store/useStored";
 import { isValidJson } from "src/utils/isValidJson";
-import useStored from "src/hooks/store/useStored";
+import { ThemeProvider } from "styled-components";
 
 if (process.env.NODE_ENV !== "development") {
   init({
@@ -21,61 +21,55 @@ if (process.env.NODE_ENV !== "development") {
 }
 
 function JsonCrack({ Component, pageProps }: AppProps) {
-  const { query } = useRouter();
-  const lightmode = useStored((state) => state.lightmode);
-  const setJson = useConfig((state) => state.setJson);
+  const { query, pathname } = useRouter();
+  const lightmode = useStored(state => state.lightmode);
+  const setJson = useConfig(state => state.setJson);
   const [isRendered, setRendered] = React.useState(false);
 
   React.useEffect(() => {
-    const isJsonValid =
-      typeof query.json === "string" &&
-      isValidJson(decodeURIComponent(query.json));
+    try {
+      if (pathname !== "editor") return;
+      const isJsonValid =
+        typeof query.json === "string" &&
+        isValidJson(decodeURIComponent(query.json));
 
-    if (isJsonValid) {
-      const jsonDecoded = decompress(JSON.parse(isJsonValid));
-      const jsonString = JSON.stringify(jsonDecoded);
-
-      setJson(jsonString);
+      if (isJsonValid) {
+        const jsonDecoded = decompress(JSON.parse(isJsonValid));
+        const jsonString = JSON.stringify(jsonDecoded);
+        setJson(jsonString);
+      }
+    } catch (error) {
+      console.error(error);
     }
-  }, [query.json, setJson]);
+  }, [pathname, query.json, setJson]);
 
   React.useEffect(() => {
-    // if (!window.matchMedia("(display-mode: standalone)").matches) {
-    //   navigator.serviceWorker
-    //     ?.getRegistrations()
-    //     .then(function (registrations) {
-    //       for (let registration of registrations) {
-    //         registration.unregister();
-    //       }
-    //     })
-    //     .catch(function (err) {
-    //       console.error("Service Worker registration failed: ", err);
-    //     });
-    // }
-
     setRendered(true);
   }, []);
 
-  if (!isRendered) return null;
-
-  return (
-    <>
-      <GoogleAnalytics />
-      <ThemeProvider theme={lightmode ? lightTheme : darkTheme}>
-        <GlobalStyle />
-        <Component {...pageProps} />
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: "#4D4D4D",
-              color: "#B9BBBE",
-            },
-          }}
-        />
-      </ThemeProvider>
-    </>
-  );
+  if (isRendered)
+    return (
+      <>
+        <GoogleAnalytics />
+        <ThemeProvider theme={lightmode ? lightTheme : darkTheme}>
+          <GlobalStyle />
+          <Component {...pageProps} />
+          <Toaster
+            position="bottom-right"
+            containerStyle={{
+              right: 60,
+            }}
+            toastOptions={{
+              style: {
+                background: "#4D4D4D",
+                color: "#B9BBBE",
+              },
+            }}
+          />
+          <SupportButton />
+        </ThemeProvider>
+      </>
+    );
 }
 
 export default JsonCrack;

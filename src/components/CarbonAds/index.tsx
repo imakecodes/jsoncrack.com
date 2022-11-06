@@ -1,5 +1,5 @@
-import Script from "next/script";
 import React from "react";
+import Script from "next/script";
 import { IoMdClose } from "react-icons/io";
 import styled from "styled-components";
 
@@ -52,9 +52,7 @@ const StyledWrapper = styled.span<{ editor?: boolean }>`
   }
 `;
 
-export const CarbonAds: React.FC<{ editor?: boolean }> = ({
-  editor = false,
-}) => {
+export const CarbonAds: React.FC<{ editor?: boolean }> = ({ editor = false }) => {
   const [isHidden, setIsHidden] = React.useState(false);
 
   if (isHidden) return null;
@@ -68,7 +66,7 @@ export const CarbonAds: React.FC<{ editor?: boolean }> = ({
       )}
       <Script
         type="text/javascript"
-        src="https://cdn.carbonads.com/carbon.js?serve=CE7IPKQL&placement=jsonvisiocom"
+        src="//cdn.carbonads.com/carbon.js?serve=CE7IPKQL&placement=jsoncrackcom"
         id="_carbonads_js"
         strategy="lazyOnload"
         onLoad={() => {
@@ -77,7 +75,6 @@ export const CarbonAds: React.FC<{ editor?: boolean }> = ({
             const ads = document.getElementById("carbonads");
 
             if (ads === null) return setTimeout(() => init(), 500);
-
             parent?.appendChild(ads);
           };
 

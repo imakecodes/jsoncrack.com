@@ -1,10 +1,11 @@
 import React from "react";
-import styled from "styled-components";
-import { Tools } from "src/containers/Editor/Tools";
 import { GraphCanvas } from "src/containers/Editor/LiveEditor/GraphCanvas";
+import { Tools } from "src/containers/Editor/Tools";
+import styled from "styled-components";
 
 const StyledLiveEditor = styled.div`
   position: relative;
+  height: 100%;
 `;
 
 const LiveEditor: React.FC = () => {

@@ -1,21 +1,19 @@
-const withPWA = require("next-pwa")({
-  dest: "public",
-  register: true,
-  disable: process.env.NODE_ENV === "development",
-  scope: "/editor",
-});
+const withBundleAnalyzer =
+  process.env.ANALYZE === "true"
+    ? require("@next/bundle-analyzer")({
+        enabled: process.env.ANALYZE === "true",
+      })()
+    : x => x;
 
 /**
  * @type {import('next').NextConfig}
  */
-const nextConfig = {
-  reactStrictMode: true,
-  exportPathMap: async () => ({
-    "/": { page: "/" },
-    "/editor": { page: "/Editor" },
-    "/widget": { page: "/Widget" },
-    "/embed": { page: "/Embed" },
-  }),
+const config = {
+  reactStrictMode: false,
+  productionBrowserSourceMaps: true,
+  compiler: {
+    styledComponents: true,
+  },
 };
 
-module.exports = withPWA(nextConfig);
+module.exports = withBundleAnalyzer(config);

@@ -1,7 +1,13 @@
 import Document, { Html, Head, Main, NextScript } from "next/document";
+import Script from "next/script";
+import { createGetInitialProps } from "@mantine/next";
 import { SeoTags } from "src/components/SeoTags";
 
+const getInitialProps = createGetInitialProps();
+
 class MyDocument extends Document {
+  static getInitialProps = getInitialProps;
+
   render() {
     return (
       <Html lang="en">
@@ -14,16 +20,10 @@ class MyDocument extends Document {
           <meta name="theme-color" content="#36393E" />
           <link rel="manifest" href="/manifest.json" />
           <link rel="icon" href="/favicon.ico" />
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link
-            rel="preconnect"
-            href="https://fonts.gstatic.com"
-            crossOrigin="anonymous"
-          />
-          <link
-            href="https://fonts.googleapis.com/css2?family=Catamaran:wght@400;500;700&family=Roboto+Mono:wght@500&family=Roboto:wght@400;500;700&display=swap"
-            rel="stylesheet"
-            crossOrigin="anonymous"
+          <Script
+            strategy="afterInteractive"
+            src="//m.servedby-buysellads.com/monetization.js"
+            type="text/javascript"
           />
         </Head>
         <body>

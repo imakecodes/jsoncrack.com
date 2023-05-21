@@ -1,62 +1,59 @@
 import React from "react";
-import toast from "react-hot-toast";
-import { FiCopy } from "react-icons/fi";
-import { Button } from "src/components/Button";
-import { Modal } from "src/components/Modal";
-import styled from "styled-components";
+import { Modal, Stack, Text, ScrollArea, ModalProps } from "@mantine/core";
+import { Prism } from "@mantine/prism";
+import { shallow } from "zustand/shallow";
+import useGraph from "src/store/useGraph";
 
-interface NodeModalProps {
-  selectedNode: object;
-  visible: boolean;
-  closeModal: () => void;
-}
-
-const StyledTextarea = styled.textarea`
-  resize: none;
-  width: 100%;
-  min-height: 200px;
-
-  padding: 10px;
-  background: ${({ theme }) => theme.BACKGROUND_TERTIARY};
-  color: ${({ theme }) => theme.INTERACTIVE_NORMAL};
-  outline: none;
-  border-radius: 4px;
-  line-height: 20px;
-  border: none;
-`;
-
-export const NodeModal = ({ selectedNode, visible, closeModal }: NodeModalProps) => {
-  const nodeData = Array.isArray(selectedNode)
-    ? Object.fromEntries(selectedNode)
-    : selectedNode;
-
-  const handleClipboard = () => {
-    toast.success("Content copied to clipboard!");
-    navigator.clipboard.writeText(JSON.stringify(nodeData));
-    closeModal();
+const dataToString = (data: any) => {
+  const text = Array.isArray(data) ? Object.fromEntries(data) : data;
+  const replacer = (_: string, v: string) => {
+    if (typeof v === "string") return v.replaceAll('"', "");
+    return v;
   };
 
+  return JSON.stringify(text, replacer, 2);
+};
+
+const CodeBlock: React.FC<{ children: any }> = ({ children }) => {
   return (
-    <Modal visible={visible} setVisible={closeModal}>
-      <Modal.Header>Node Content</Modal.Header>
-      <Modal.Content>
-        <StyledTextarea
-          defaultValue={JSON.stringify(
-            nodeData,
-            (_, v) => {
-              if (typeof v === "string") return v.replaceAll('"', "");
-              return v;
-            },
-            2
-          )}
-          readOnly
-        />
-      </Modal.Content>
-      <Modal.Controls setVisible={closeModal}>
-        <Button status="SECONDARY" onClick={handleClipboard}>
-          <FiCopy size={18} /> Clipboard
-        </Button>
-      </Modal.Controls>
+    <ScrollArea>
+      <Prism
+        maw={600}
+        miw={350}
+        mah={250}
+        language="json"
+        copyLabel="Copy to clipboard"
+        copiedLabel="Copied to clipboard"
+        withLineNumbers
+      >
+        {children}
+      </Prism>
+    </ScrollArea>
+  );
+};
+
+export const NodeModal: React.FC<ModalProps> = ({ opened, onClose }) => {
+  const [nodeData, path] = useGraph(
+    state => [dataToString(state.selectedNode.text), state.selectedNode.path],
+    shallow
+  );
+
+  return (
+    <Modal title="Node Content" size="auto" opened={opened} onClose={onClose} centered>
+      <Stack py="sm" spacing="sm">
+        <Stack spacing="xs">
+          <Text fz="sm" fw={700}>
+            Content
+          </Text>
+          <CodeBlock>{nodeData}</CodeBlock>
+        </Stack>
+        <Stack spacing="xs">
+          <Text fz="sm" fw={700}>
+            Node Path
+          </Text>
+          <CodeBlock>{path}</CodeBlock>
+        </Stack>
+      </Stack>
     </Modal>
   );
 };

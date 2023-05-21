@@ -1,7 +1,7 @@
 import React from "react";
 import { Node, NodeProps } from "reaflow";
-import ObjectNode from "./ObjectNode";
-import TextNode from "./TextNode";
+import { ObjectNode } from "./ObjectNode";
+import { TextNode } from "./TextNode";
 
 export interface CustomNodeProps {
   node: NodeData;
@@ -11,8 +11,6 @@ export interface CustomNodeProps {
 }
 
 const rootProps = {
-  width: 40,
-  height: 40,
   rx: 50,
   ry: 50,
 };
@@ -27,14 +25,7 @@ export const CustomNode = (nodeProps: NodeProps) => {
           return <ObjectNode node={node as NodeData} x={x} y={y} />;
         }
 
-        return (
-          <TextNode
-            node={node as NodeData}
-            hasCollapse={data.childrenCount > 0}
-            x={x}
-            y={y}
-          />
-        );
+        return <TextNode node={node as NodeData} hasCollapse={!!data.childrenCount} x={x} y={y} />;
       }}
     </Node>
   );

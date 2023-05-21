@@ -1,12 +1,10 @@
 import React from "react";
-import Editor, { loader, Monaco } from "@monaco-editor/react";
-import { parse } from "jsonc-parser";
-import { Loading } from "src/components/Loading";
-import useConfig from "src/store/useConfig";
-import useGraph from "src/store/useGraph";
-import useStored from "src/store/useStored";
-import { parser } from "src/utils/jsonParser";
 import styled from "styled-components";
+import Editor, { loader, Monaco, useMonaco } from "@monaco-editor/react";
+import { Loading } from "src/layout/Loading";
+import useFile from "src/store/useFile";
+import useStored from "src/store/useStored";
+import { CarbonAds } from "../CarbonAds";
 
 loader.config({
   paths: {
@@ -16,6 +14,7 @@ loader.config({
 
 const editorOptions = {
   formatOnPaste: true,
+  formatOnType: true,
   minimap: {
     enabled: false,
   },
@@ -23,69 +22,77 @@ const editorOptions = {
 
 const StyledWrapper = styled.div`
   display: grid;
-  height: calc(100vh - 36px);
+  height: calc(100vh - 63px);
   grid-template-columns: 100%;
   grid-template-rows: minmax(0, 1fr);
 `;
 
-function handleEditorWillMount(monaco: Monaco) {
-  monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
-    allowComments: true,
-    comments: "ignore",
-  });
-}
-
-export const MonacoEditor = ({
-  setHasError,
-}: {
-  setHasError: (value: boolean) => void;
-}) => {
-  const [value, setValue] = React.useState<string | undefined>("");
-  const setJson = useConfig(state => state.setJson);
-  const setGraphValue = useGraph(state => state.setGraphValue);
-
-  const json = useConfig(state => state.json);
-  const foldNodes = useConfig(state => state.foldNodes);
-  const lightmode = useStored(state => (state.lightmode ? "light" : "vs-dark"));
+export const MonacoEditor = () => {
+  const monaco = useMonaco();
+  const contents = useFile(state => state.contents);
+  const setContents = useFile(state => state.setContents);
+  const setError = useFile(state => state.setError);
+  const jsonSchema = useFile(state => state.jsonSchema);
+  const getHasChanges = useFile(state => state.getHasChanges);
+  const theme = useStored(state => (state.lightmode ? "light" : "vs-dark"));
 
   React.useEffect(() => {
-    const { nodes, edges } = parser(json, foldNodes);
+    if (monaco) {
+      monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+        validate: true,
+        ...(jsonSchema && {
+          schemas: [
+            {
+              fileMatch: ["*"],
+              schema: jsonSchema,
+            },
+          ],
+        }),
+      });
+    }
+  }, [jsonSchema, monaco]);
 
-    setGraphValue("nodes", nodes);
-    setGraphValue("edges", edges);
-    setValue(json);
-  }, [foldNodes, json, setGraphValue]);
+  const handleEditorWillMount = React.useCallback(
+    (monaco: Monaco) => {
+      monaco.editor.onDidChangeMarkers(([uri]) => {
+        const markers = monaco.editor.getModelMarkers({ resource: uri });
+        setError(markers.length);
+      });
+    },
+    [setError]
+  );
 
   React.useEffect(() => {
-    const formatTimer = setTimeout(() => {
-      if (!value) {
-        setHasError(false);
-        return setJson("{}");
+    const beforeunload = (e: BeforeUnloadEvent) => {
+      if (getHasChanges()) {
+        const confirmationMessage =
+          "Unsaved changes, if you leave before saving  your changes will be lost";
+
+        (e || window.event).returnValue = confirmationMessage; //Gecko + IE
+        return confirmationMessage;
       }
+    };
 
-      const errors = [];
-      const parsedJSON = JSON.stringify(parse(value, errors), null, 2);
-      if (errors.length) return setHasError(true);
+    window.addEventListener("beforeunload", beforeunload);
 
-      setJson(parsedJSON);
-      setHasError(false);
-    }, 1200);
-
-    return () => clearTimeout(formatTimer);
-  }, [value, setJson, setHasError]);
+    return () => {
+      window.removeEventListener("beforeunload", beforeunload);
+    };
+  }, [getHasChanges]);
 
   return (
     <StyledWrapper>
       <Editor
-        height="100%"
-        defaultLanguage="json"
-        value={value}
-        theme={lightmode}
+        value={contents}
+        theme={theme}
         options={editorOptions}
-        onChange={setValue}
+        onChange={contents => setContents({ contents, skipUpdate: true })}
         loading={<Loading message="Loading Editor..." />}
         beforeMount={handleEditorWillMount}
+        language="json"
+        height="100%"
       />
+      <CarbonAds />
     </StyledWrapper>
   );
 };
